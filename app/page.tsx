@@ -2,9 +2,9 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "./lib/supabase";
+import Footer from "./components/Footer";
 import "leaflet/dist/leaflet.css";
-import CookieBanner from "./components/CookieBanner";
-import LegalFooter from "./components/LegalFooter";
+import CookieConsentModal from "./components/CookieConsentModal";
 
 const MapWithClient = dynamic(() => import("./lib/MapClient"), { ssr: false });
 
@@ -60,12 +60,11 @@ export default function Home() {
 
   async function handleSubmit() {
     if (!form.title || !form.description || !form.country || !form.city || !form.zipcode) {
-      alert("Please fill in all required fields");
-      return;
+      alert("Please fill in all required fields"); return;
     }
     if (!form.photo) { alert("Please upload a photo"); return; }
-    setLoading(true);
 
+    setLoading(true);
     let photoUrl = "";
     try {
       const path = `${Date.now()}_${form.photo.name}`;
@@ -73,11 +72,8 @@ export default function Home() {
       if (upErr) throw upErr;
       const { data } = supabase.storage.from("profile-photos").getPublicUrl(path);
       photoUrl = data.publicUrl;
-    } catch (e: any) {
-      console.error(e);
-      alert("Image upload failed");
-      setLoading(false);
-      return;
+    } catch (e) {
+      console.error(e); alert("Image upload failed"); setLoading(false); return;
     }
 
     const row = {
@@ -98,21 +94,12 @@ export default function Home() {
 
     const { error } = await supabase.from("entries").insert([row]);
     setLoading(false);
-    if (error) {
-      alert(error.message);
-    } else {
+    if (error) { alert(error.message); }
+    else {
       setForm({
-        type: "artist",
-        title: "",
-        description: "",
-        country: "",
-        city: "",
-        zipcode: "",
-        community: "",
-        link: "",
-        photo: null,
-        consent_store: false,
-        consent_share: false,
+        type: "artist", title: "", description: "", country: "", city: "",
+        zipcode: "", community: "", link: "", photo: null,
+        consent_store: false, consent_share: false,
       });
       await load();
       alert("Submitted!");
@@ -173,8 +160,8 @@ export default function Home() {
   );
 
   return (
-    <div style={{ height: "100dvh", display: "grid", gridTemplateRows: "56px 32px 1fr" }}>
-      <CookieBanner/>
+    <div style={{ height: "100dvh", display: "grid", gridTemplateRows: "56px 32px 1fr auto" }}>
+      <CookieConsentModal/>
       {/* TOP NAV */}
       <div style={{
         background: "#fff",
@@ -236,7 +223,7 @@ export default function Home() {
         height: "100%",
         minHeight: 0
       }}>
-        {/* LEFT (white, scrollable, extra airy) */}
+        {/* LEFT (white, scrollable) */}
         <div style={{
           background: "#fff",
           color: "#000",
@@ -247,7 +234,7 @@ export default function Home() {
           WebkitOverflowScrolling: "touch",
           minHeight: 0
         }}>
-          {/* SEARCH (more padding) */}
+          {/* SEARCH */}
           <div style={{ marginBottom: 48 }}>
             <div style={{
               fontFamily: "Space Mono, monospace",
@@ -289,7 +276,7 @@ export default function Home() {
 
           <div style={{ height: 1, background: "#000", opacity: 0.10, margin: "24px 0" }} />
 
-          {/* SUBMIT (more padding) */}
+          {/* SUBMIT */}
           <div style={{ marginBottom: 56 }}>
             <div style={{
               fontFamily: "Space Mono, monospace",
@@ -408,13 +395,16 @@ export default function Home() {
           </div>
         </div>
 
-        {/* RIGHT MAP (fixed inside) */}
+        {/* RIGHT MAP */}
         <div style={{ position:"relative", minHeight: 0 }}>
           <div style={{ position:"absolute", inset:0 }}>
             <MapWithClient entries={entries} filter={""} search={search}/>
           </div>
         </div>
       </div>
+
+      {/* Footer (site-wide legal & links) */}
+      <Footer />
     </div>
   );
 }
