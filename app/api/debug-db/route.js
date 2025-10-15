@@ -1,6 +1,8 @@
+export const runtime = 'nodejs';
+
 import { createClient } from '@supabase/supabase-js';
 
-export default async function handler(req, res) {
+export async function GET() {
   const envClient = process.env.NEXT_PUBLIC_SUPABASE_URL || 'not-set';
   const envServer = process.env.SUPABASE_URL || 'not-set';
 
@@ -22,5 +24,10 @@ export default async function handler(req, res) {
     db = { ok:false, reason: e.message };
   }
 
-  res.status(200).json({ envClient, envServer, vercelEnv: process.env.VERCEL_ENV || 'unknown', db });
+  return new Response(JSON.stringify({
+    envClient, envServer, vercelEnv: process.env.VERCEL_ENV || 'unknown', db
+  }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' }
+  });
 }
