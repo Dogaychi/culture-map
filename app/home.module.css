@@ -1,5 +1,5 @@
 .layoutShell {
-  min-height: 100dvh;
+  min-height: 100vh;
   display: grid;
   grid-template-rows: 56px 32px 1fr auto;
 }
@@ -377,6 +377,16 @@
   }
   .layoutShell {
     grid-template-rows: auto auto 1fr auto;
+  }
+}
+
+@media (min-width: 769px) {
+  .layoutShell {
+    max-height: 100vh;
+    overflow: hidden;
+  }
+  .layoutMain {
+    height: 100%;
   }
 }
 
