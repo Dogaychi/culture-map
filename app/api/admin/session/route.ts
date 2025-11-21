@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { admin } from "../../_client";
+import { admin } from "../_client";
 
 export async function POST(req: Request) {
   const body = await req.json();
