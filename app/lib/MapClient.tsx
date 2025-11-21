@@ -25,6 +25,7 @@ type Entry = {
   country: string;
   city?: string;
   zipcode: string;
+  address?: string;
   community?: string;
   link?: string;
   photo_url?: string;
@@ -60,10 +61,17 @@ export default function MapWithClient({
 
   // helper to build a stable geocode key
   function buildKey(e: Entry) {
-    const raw = `${(e.city || "").trim()} ${(e.zipcode || "").trim()} ${(e.country || "").trim()}`
-      .replace(/\s+/g, " ")
-      .trim();
-    return raw ? raw.toLowerCase() : "";
+    const parts = [
+      (e.address || "").trim(),
+      (e.city || "").trim(),
+      (e.zipcode || "").trim(),
+      (e.country || "").trim(),
+    ].filter(Boolean);
+
+    if (parts.length === 0) return "";
+
+    const raw = parts.join(" ").replace(/\s+/g, " ").trim();
+    return raw.toLowerCase();
   }
 
   // geocode ONLY when entries list changes (initial and after new submissions)
@@ -199,12 +207,12 @@ export default function MapWithClient({
         center={[20, 0]}
         zoom={2}
         className={styles.leafletRoot}
-        scrollWheelZoom={!pinsLoading}
-        dragging={!pinsLoading}
-        doubleClickZoom={!pinsLoading}
-        boxZoom={!pinsLoading}
-        keyboard={!pinsLoading}
-        touchZoom={!pinsLoading}
+        scrollWheelZoom={true}
+        dragging={true}
+        doubleClickZoom={true}
+        boxZoom={true}
+        keyboard={true}
+        touchZoom={true}
         worldCopyJump={false}
         zoomAnimation={true}
         markerZoomAnimation={true}

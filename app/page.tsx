@@ -17,6 +17,7 @@ type Entry = {
   country?: string;
   city?: string;
   zipcode?: string;
+  address?: string;
   community?: string;
   link?: string;
   photo_url?: string;
@@ -36,6 +37,7 @@ export default function Home() {
     country: "",
     city: "",
     zipcode: "",
+    address: "",
     community: "",
     link: "",
     photo: null as File | null,
@@ -73,7 +75,15 @@ export default function Home() {
   }, [entries]);
 
   async function handleSubmit() {
-    if (!form.title || !form.description || !form.country || !form.city || !form.zipcode) {
+    const requiresAddress = form.type === "space";
+    if (
+      !form.title ||
+      !form.description ||
+      !form.country ||
+      !form.city ||
+      !form.zipcode ||
+      (requiresAddress && !form.address.trim())
+    ) {
       alert("Please fill in all required fields"); return;
     }
     if (!form.photo) { alert("Please upload a photo"); return; }
@@ -97,6 +107,7 @@ export default function Home() {
       country: form.country,
       city: form.city,
       zipcode: form.zipcode,
+      address: form.address || null,
       community: form.community || null,
       link: form.link || null,
       photo_url: photoUrl,
@@ -112,7 +123,7 @@ export default function Home() {
     else {
       setForm({
         type: "artist", title: "", description: "", country: "", city: "",
-        zipcode: "", community: "", link: "", photo: null,
+        zipcode: "", address: "", community: "", link: "", photo: null,
         consent_store: false, consent_share: false,
       });
       await load();
@@ -236,6 +247,14 @@ export default function Home() {
 
                 <input className={styles.input} placeholder="ZIP Code *" value={form.zipcode}
                   onChange={(e:any)=>setForm({...form,zipcode:e.target.value})}/>
+
+                <input
+                  className={styles.input}
+                  placeholder="Street Address (required for Cultural Spaces)"
+                  value={form.address}
+                  onChange={(e:any)=>setForm({...form,address:e.target.value})}
+                  required={form.type === "space"}
+                />
 
                 <input className={styles.input} placeholder="Community / Subculture (optional)" value={form.community}
                   onChange={(e:any)=>setForm({...form,community:e.target.value})}/>

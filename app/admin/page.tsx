@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
@@ -11,26 +11,28 @@ type Entry = {
   zipcode: string;
   status: string;
   city?: string;
-};
-
-type Event = {
-  id: number;
-  title: string;
-  country: string;
-  zipcode: string;
-  status: string;
-  starts_at?: string;
-  ends_at?: string;
+  description?: string;
+  community?: string;
+  link?: string;
+  photo_url?: string;
+  address?: string | null;
+  lat?: number | null;
+  lon?: number | null;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export default function AdminPage() {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [loadingEntries, setLoadingEntries] = useState(false);
+  const [mutating, setMutating] = useState(false);
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string[]>(["pending", "rejected"]);
+  const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -65,37 +67,47 @@ export default function AdminPage() {
     };
   }, [token]);
 
-  const load = async () => {
+  const statusKey = useMemo(
+    () => statusFilter.slice().sort().join(","),
+    [statusFilter]
+  );
+
+  const loadEntries = useCallback(async () => {
     if (!headers) return;
     setError("");
-    setLoading(true);
+    setLoadingEntries(true);
     try {
-      const res = await fetch("/api/admin/pending", { headers });
+      const params = new URLSearchParams();
+      if (statusFilter.length > 0) {
+        params.set("status", statusFilter.join(","));
+      }
+      const query = params.toString();
+      const res = await fetch(`/api/admin/entries${query ? `?${query}` : ""}`, { headers });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
         throw new Error(json.error || "Request failed");
       }
       const json = await res.json();
       setEntries(json.entries || []);
-      setEvents(json.events || []);
     } catch (e: any) {
       setError(e.message || "Unknown error");
+      setEntries([]);
     } finally {
-      setLoading(false);
+      setLoadingEntries(false);
     }
-  };
+  }, [headers, statusKey]);
 
   useEffect(() => {
     if (headers) {
-      load();
+      loadEntries();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [headers]);
+  }, [headers, statusKey]);
 
-  const act = async (path: string, id: number, label: string) => {
+  const act = useCallback(async (path: string, id: number, label: string) => {
     if (!headers) return;
     if (!confirm(`Confirm ${label.toLowerCase()} for #${id}?`)) return;
-    setLoading(true);
+    setMutating(true);
     try {
       const res = await fetch(path, {
         method: "POST",
@@ -106,19 +118,82 @@ export default function AdminPage() {
         const json = await res.json().catch(() => ({}));
         throw new Error(json.error || "Action failed");
       }
-      await load();
+      await loadEntries();
     } catch (e: any) {
       alert(e.message || "Action failed");
     } finally {
-      setLoading(false);
+      setMutating(false);
     }
-  };
+  }, [headers, loadEntries]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
     setToken(null);
     router.replace("/admin/login");
   }
+
+  const filteredEntries = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return entries;
+    return entries.filter((entry) => {
+      const haystack = [
+        entry.title,
+        entry.type,
+        entry.city,
+        entry.country,
+        entry.zipcode,
+        entry.status,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [entries, search]);
+
+  const toggleStatus = (value: string) => {
+    setStatusFilter((prev) => {
+      const next = prev.includes(value)
+        ? prev.filter((item) => item !== value)
+        : [...prev, value];
+      return next.length === 0 ? prev : next;
+    });
+  };
+
+  const EntryDetail = ({
+    label,
+    value,
+    isLink = false,
+  }: {
+    label: string;
+    value?: string | null;
+    isLink?: boolean;
+  }) => {
+    const display = value && value.trim().length > 0 ? value : "—";
+    return (
+      <div>
+        <div style={{ fontWeight: 700, marginBottom: 4, textTransform: "uppercase", fontSize: 12 }}>
+          {label}
+        </div>
+        <div
+          style={{
+            border: "2px solid #000",
+            borderRadius: 12,
+            padding: 10,
+            wordBreak: "break-word",
+          }}
+        >
+          {isLink && value ? (
+            <a href={value} target="_blank" rel="noreferrer">
+              {value}
+            </a>
+          ) : (
+            display
+          )}
+        </div>
+      </div>
+    );
+  };
 
   if (checkingSession) {
     return (
@@ -145,7 +220,7 @@ export default function AdminPage() {
         </tr>
       </thead>
       <tbody>
-        {entries.map((e) => (
+        {filteredEntries.map((e) => (
           <tr key={e.id} style={{ borderBottom: "1px solid #ddd" }}>
             <td style={{ padding: "8px 4px" }}>{e.id}</td>
             <td style={{ padding: "8px 4px", fontWeight: 700 }}>{e.title}</td>
@@ -159,55 +234,21 @@ export default function AdminPage() {
             </td>
             <td style={{ padding: "8px 4px", display: "flex", gap: 8 }}>
               <button
+                onClick={() => setSelectedEntry(e)}
+                style={{ border: "2px solid #000", background: "#D7FF3A", padding: "4px 12px", cursor: "pointer" }}
+              >
+                View
+              </button>
+              <button
                 onClick={() => act("/api/admin/entries/approve", e.id, "Approve entry")}
+                disabled={mutating}
                 style={{ border: "2px solid #000", background: "#fff", padding: "4px 10px", cursor: "pointer" }}
               >
                 Approve
               </button>
               <button
                 onClick={() => act("/api/admin/entries/reject", e.id, "Reject entry")}
-                style={{ border: "2px solid #c00", background: "#fff", padding: "4px 10px", cursor: "pointer", color: "#c00" }}
-              >
-                Reject
-              </button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-
-  const EventTable = () => (
-    <table style={{ width: "100%", borderCollapse: "collapse" }}>
-      <thead>
-        <tr style={{ textAlign: "left", borderBottom: "2px solid #000" }}>
-          <th style={{ padding: "8px 4px" }}>ID</th>
-          <th style={{ padding: "8px 4px" }}>Title</th>
-          <th style={{ padding: "8px 4px" }}>Location</th>
-          <th style={{ padding: "8px 4px" }}>Status</th>
-          <th style={{ padding: "8px 4px" }}>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {events.map((ev) => (
-          <tr key={ev.id} style={{ borderBottom: "1px solid #ddd" }}>
-            <td style={{ padding: "8px 4px" }}>{ev.id}</td>
-            <td style={{ padding: "8px 4px", fontWeight: 700 }}>{ev.title}</td>
-            <td style={{ padding: "8px 4px" }}>
-              {ev.country} {ev.zipcode}
-            </td>
-            <td style={{ padding: "8px 4px", fontWeight: 700, color: ev.status === "rejected" ? "#c00" : "#555" }}>
-              {ev.status.toUpperCase()}
-            </td>
-            <td style={{ padding: "8px 4px", display: "flex", gap: 8 }}>
-              <button
-                onClick={() => act("/api/admin/events/approve", ev.id, "Approve event")}
-                style={{ border: "2px solid #000", background: "#fff", padding: "4px 10px", cursor: "pointer" }}
-              >
-                Approve
-              </button>
-              <button
-                onClick={() => act("/api/admin/events/reject", ev.id, "Reject event")}
+                disabled={mutating}
                 style={{ border: "2px solid #c00", background: "#fff", padding: "4px 10px", cursor: "pointer", color: "#c00" }}
               >
                 Reject
@@ -231,11 +272,11 @@ export default function AdminPage() {
         <h1 style={{ fontSize: 28, margin: 0 }}>Admin Moderation</h1>
         <div style={{ display: "flex", gap: 10 }}>
           <button
-            onClick={load}
-            disabled={loading}
+            onClick={() => loadEntries()}
+            disabled={loadingEntries || mutating}
             style={{ border: "2px solid #000", background: "#fff", padding: "8px 16px", borderRadius: 9999, cursor: "pointer" }}
           >
-            {loading ? "Refreshing…" : "Refresh"}
+            {loadingEntries ? "Refreshing…" : "Refresh"}
           </button>
           <button
             onClick={handleLogout}
@@ -248,23 +289,140 @@ export default function AdminPage() {
 
       {error && <div style={{ color: "#c00", marginBottom: 20 }}>{error}</div>}
 
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 24 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {["pending", "approved", "rejected"].map((status) => {
+            const active = statusFilter.includes(status);
+            return (
+              <button
+                key={status}
+                onClick={() => toggleStatus(status)}
+                style={{
+                  border: "2px solid #000",
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  cursor: "pointer",
+                  background: active ? "#D7FF3A" : "#fff",
+                }}
+              >
+                {status}
+              </button>
+            );
+          })}
+        </div>
+        <input
+          placeholder="Search entries"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            border: "2px solid #000",
+            padding: "8px 12px",
+            borderRadius: 9999,
+            flex: "1 1 200px",
+            minWidth: 200,
+          }}
+        />
+      </div>
+
       <section style={{ marginBottom: 40 }}>
-        <h2 style={{ fontSize: 18, marginBottom: 12 }}>Entries (Pending / Rejected)</h2>
-        {entries.length === 0 ? (
-          <div style={{ color: "#666" }}>None</div>
+        <h2 style={{ fontSize: 18, marginBottom: 12 }}>Entries</h2>
+        {loadingEntries ? (
+          <div style={{ color: "#666" }}>Loading entries…</div>
+        ) : filteredEntries.length === 0 ? (
+          <div style={{ color: "#666" }}>No entries match your filters.</div>
         ) : (
           <EntryTable />
         )}
       </section>
 
-      <section>
-        <h2 style={{ fontSize: 18, marginBottom: 12 }}>Events (Pending / Rejected)</h2>
-        {events.length === 0 ? (
-          <div style={{ color: "#666" }}>None</div>
-        ) : (
-          <EventTable />
-        )}
-      </section>
+      {selectedEntry && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 20,
+          }}
+          onClick={() => setSelectedEntry(null)}
+        >
+          <div
+            style={{
+              background: "#fff",
+              border: "3px solid #000",
+              borderRadius: 16,
+              boxShadow: "0 8px 0 #000",
+              maxWidth: 640,
+              width: "100%",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              padding: 24,
+              textTransform: "none",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ margin: 0, textTransform: "uppercase" }}>
+                Entry #{selectedEntry.id} • {selectedEntry.title}
+              </h3>
+              <button
+                onClick={() => setSelectedEntry(null)}
+                style={{ border: "2px solid #000", background: "#D7FF3A", padding: "6px 14px", borderRadius: 9999 }}
+              >
+                Close
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gap: 12 }}>
+              <EntryDetail label="Status" value={selectedEntry.status} />
+              <EntryDetail label="Type" value={selectedEntry.type} />
+              <EntryDetail label="Country" value={selectedEntry.country} />
+              <EntryDetail label="City" value={selectedEntry.city} />
+              <EntryDetail label="ZIP" value={selectedEntry.zipcode} />
+              <EntryDetail label="Address" value={selectedEntry.address} />
+              <EntryDetail label="Community" value={selectedEntry.community} />
+              <EntryDetail label="Link" value={selectedEntry.link} isLink />
+              <EntryDetail label="Latitude" value={selectedEntry.lat?.toString()} />
+              <EntryDetail label="Longitude" value={selectedEntry.lon?.toString()} />
+              <EntryDetail label="Created" value={selectedEntry.created_at} />
+              <EntryDetail label="Updated" value={selectedEntry.updated_at} />
+              <div>
+                <div style={{ fontWeight: 700, marginBottom: 4, textTransform: "uppercase", fontSize: 12 }}>
+                  Description
+                </div>
+                <div
+                  style={{
+                    border: "2px solid #000",
+                    borderRadius: 12,
+                    padding: 12,
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {selectedEntry.description || "—"}
+                </div>
+              </div>
+              {selectedEntry.photo_url && (
+                <div>
+                  <div style={{ fontWeight: 700, marginBottom: 4, textTransform: "uppercase", fontSize: 12 }}>
+                    Photo
+                  </div>
+                  <img
+                    src={selectedEntry.photo_url}
+                    alt={selectedEntry.title}
+                    style={{ width: "100%", borderRadius: 12, border: "2px solid #000", objectFit: "cover" }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

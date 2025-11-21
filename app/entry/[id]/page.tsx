@@ -2,7 +2,7 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 
 function RelCard({ e }: { e: any }) {
   return (
@@ -57,11 +57,12 @@ function RelCard({ e }: { e: any }) {
   );
 }
 
-export default function EntryDetails({ params }: { params: { id: string } }) {
+export default function EntryDetails({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   const [row, setRow] = useState<any>(null);
   const [related, setRelated] = useState<any[]>([]);
   const [err, setErr] = useState<string | null>(null);
-  const id = Number(params.id);
+  const id = Number(resolvedParams.id);
 
   useEffect(() => {
     let active = true;
