@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { admin } from "../../_client";
-import { isAuthorized } from "../../_auth";
+import { requireAdmin } from "../../_auth";
 
 export async function POST(req: Request) {
-  if (!isAuthorized(req.headers)) return NextResponse.json({ error:"unauthorized" }, { status:401 });
+  const user = await requireAdmin(req.headers);
+  if (!user) return NextResponse.json({ error:"unauthorized" }, { status:401 });
   const { id } = await req.json();
   if (!id) return NextResponse.json({ error:"missing id" }, { status:400 });
   const supa = admin();

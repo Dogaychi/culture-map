@@ -44,7 +44,11 @@ export default function Home() {
   });
 
   async function load() {
-    const { data } = await supabase.from("entries").select("*").order("id", { ascending: false });
+    const { data } = await supabase
+      .from("entries")
+      .select("*")
+      .eq("status", "approved")
+      .order("id", { ascending: false });
     setEntries((data || []) as Entry[]);
   }
   useEffect(() => { load(); }, []);
@@ -99,7 +103,7 @@ export default function Home() {
       lat: null, lon: null,
       consent_store: !!form.consent_store,
       consent_share: !!form.consent_share,
-      status: "approved"
+      status: "pending"
     };
 
     const { error } = await supabase.from("entries").insert([row]);
