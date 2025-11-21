@@ -289,7 +289,7 @@ export default function Home() {
           <div className={styles.databaseTitle}>Database</div>
 
           <div className={styles.cardGrid}>
-            {filtered.slice(0, 8).map((e) => <Card key={e.id} e={e} />)}
+            {filtered.map((e) => <Card key={e.id} e={e} />)}
             {filtered.length === 0 && (
               <div className={styles.emptyState}>
                 No results yet — try a different keyword or add a submission.
