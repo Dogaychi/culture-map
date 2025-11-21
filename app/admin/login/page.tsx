@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
 export default function AdminLogin() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, fontFamily: "Space Mono, monospace" }}>Loading…</div>}>
+      <AdminLoginInner />
+    </Suspense>
+  );
+}
+
+function AdminLoginInner() {
   const router = useRouter();
   const search = useSearchParams();
   const [email, setEmail] = useState("");
