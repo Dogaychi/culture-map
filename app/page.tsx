@@ -268,12 +268,12 @@ export default function Home() {
                 <label className={styles.checkboxLabel}>
                   <input type="checkbox" checked={form.consent_store}
                          onChange={(e)=>setForm({...form,consent_store:e.target.checked})}/>
-                  Allow us to store this data
+                  Allow us to store and process this data according to our <a href="https://countercultcreatives.com/privacy-policy/" style={{ color: "#000", textDecoration: "underline" }}>Privacy Policy</a>
                 </label>
                 <label className={styles.checkboxLabel}>
                   <input type="checkbox" checked={form.consent_share}
                          onChange={(e)=>setForm({...form,consent_share:e.target.checked})}/>
-                  Allow us to share this data
+                  Allow us to share according to our <a href="https://countercultcreatives.com/privacy-policy/" style={{ color: "#000", textDecoration: "underline" }}>Privacy Policy</a>
                 </label>
 
                 <button onClick={handleSubmit} disabled={loading} className={styles.submitButton}>

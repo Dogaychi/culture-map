@@ -14,9 +14,9 @@ export default function Footer() {
     >
       <div>
         © {new Date().getFullYear()} Countercult Creatives • 
-        <a href="/terms" style={{ marginLeft: 4, color: "#000", textDecoration: "underline" }}>Terms</a> • 
-        <a href="/privacy" style={{ marginLeft: 4, color: "#000", textDecoration: "underline" }}>Privacy</a> • 
-        <a href="/cookies" style={{ marginLeft: 4, color: "#000", textDecoration: "underline" }}>Cookies</a>
+        <a href="https://countercultcreatives.com/terms-and-conditions/" style={{ marginLeft: 4, color: "#000", textDecoration: "underline" }}>Terms</a> • 
+        <a href="https://countercultcreatives.com/privacy-policy/" style={{ marginLeft: 4, color: "#000", textDecoration: "underline" }}>Privacy</a> • 
+        <a href="https://countercultcreatives.com/cookie-policy/" style={{ marginLeft: 4, color: "#000", textDecoration: "underline" }}>Cookies</a>
       </div>
     </footer>
   );

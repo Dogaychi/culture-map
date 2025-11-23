@@ -62,8 +62,9 @@ export default function CookieConsentModal() {
           We use essential cookies and store submitted data to run Culture Explorer. With your consent, we may also
           use analytics and (in the future) show sponsored content. We analyze submissions to document culture and
           support trend forecasting. See our{" "}
-          <a href="/privacy" style={{ color: "#000", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
-          <a href="/cookies" style={{ color: "#000", textDecoration: "underline" }}>Cookie Policy</a>.
+          <a href="https://countercultcreatives.com/privacy-policy/" style={{ color: "#000", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
+          <a href="https://countercultcreatives.com/cookie-policy/" style={{ color: "#000", textDecoration: "underline" }}>Cookie Policy</a>.
+          <a href="https://countercultcreatives.com/terms-and-conditions/" style={{ color: "#000", textDecoration: "underline" }}>Cookie Policy</a>.
         </p>
 
         <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
