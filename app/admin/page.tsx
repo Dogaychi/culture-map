@@ -253,6 +253,13 @@ export default function AdminPage() {
               >
                 Reject
               </button>
+              <button
+                onClick={() => act("/api/admin/entries/delete", e.id, "Delete entry")}
+                disabled={mutating}
+                style={{ border: "2px solid #c00", background: "#c00", padding: "4px 10px", cursor: "pointer", color: "#fff" }}
+              >
+                Delete
+              </button>
             </td>
           </tr>
         ))}
